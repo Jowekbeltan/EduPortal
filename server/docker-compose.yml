@@ -4,7 +4,7 @@ services:
     image: mysql:8
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: John*8878
       MYSQL_DATABASE: edu_portal
     ports:
       - "3306:3306"
