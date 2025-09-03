@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int                    @id @default(autoincrement())
+  email            String                 @unique
+  password         String
+  displayName      String?
+  role             String                 // "student" | "teacher" | "admin"
+  preferredLanguage String                @default("en")
+  points           Int                    @default(0)
+  currentStreak    Int                    @default(0)
+  longestStreak    Int                    @default(0)
+  lastActive       DateTime?
+  createdAt        DateTime               @default(now())
+  attempts         Attempt[]
+  gamificationEvents GamificationEvent[]
+  userPoints       UserPoints?            // Add this relation
+  userStreak       UserStreak?            // Add this relation
+}
+
+model Subject {
+  id     Int    @id @default(autoincrement())
+  key    String @unique // "science","tech","math","languages","social"
+  topics Topic[]
+}
+
+model Topic {
+  id          Int      @id @default(autoincrement())
+  subjectId   Int
+  gradeLevel  Int
+  title       Json
+  description Json?
+  orderIndex  Int?
+  subject     Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  modules     Module[]
+}
+
+model Module {
+  id         Int      @id @default(autoincrement())
+  topicId    Int
+  title      Json
+  content    Json?
+  orderIndex Int?
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  quizzes    Quiz[]
+}
+
+model Quiz {
+  id       Int        @id @default(autoincrement())
+  moduleId Int
+  title    Json
+  settings Json?
+  module   Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts Attempt[]
+}
+
+model Question {
+  id         Int      @id @default(autoincrement())
+  quizId     Int
+  type       String   // 'mcq_single' | 'mcq_multi' | 'true_false' | 'short' | ...
+  prompt     Json
+  options    Json?
+  answerKey  Json?
+  points     Int      @default(1)
+  orderIndex Int?
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Attempt {
+  id         Int      @id @default(autoincrement())
+  quizId     Int
+  userId     Int
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  score      Float?
+  detail     Json?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model GamificationEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // 'lesson_complete','quiz_pass','streak_day','badge_award'
+  points    Int      @default(0)
+  meta      Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/* Optional aggregates you can use later for fast leaderboards */
+model UserPoints {
+  userId       Int      @id
+  totalPoints  Int      @default(0)
+  weeklyPoints Int      @default(0)
+  updatedAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserStreak {
+  userId        Int      @id
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActive    DateTime?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
